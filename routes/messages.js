@@ -5,7 +5,9 @@ const router = express.Router();
 // GET: Retrieve all messages
 router.get("/", async (req, res) => {
   try {
-    const messages = await Message.find();
+    const messages = await Message.find()
+      .populate("sender", "username email")
+      .populate("recipients", "username email");
     res.json(messages);
   } catch (err) {
     res.status(500).json({ error: "Failed to retrieve messages" });
@@ -15,14 +17,19 @@ router.get("/", async (req, res) => {
 // POST: Add a new message
 router.post("/", async (req, res) => {
   try {
-    const newMessage = new Message(req.body);
-    const savedMessage = await newMessage.save();
-    res.status(201).json({
-      message: "Message added successfully!",
-      messageData: savedMessage,
+    // Assuming you get senderUser and recipientUsers from req.body or database
+    const { text, senderUser, recipientUsers } = req.body;
+
+    const newMessage = new Message({
+      text,
+      sender: senderUser._id,
+      recipients: recipientUsers.map((user) => user._id),
     });
+
+    await newMessage.save();
+    res.status(201).json({ message: "Message created!", data: newMessage });
   } catch (err) {
-    res.status(400).json({ error: "Failed to add message" });
+    res.status(400).json({ error: "Failed to create message" });
   }
 });
 
